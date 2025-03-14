@@ -1,0 +1,46 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  # Configuration de la VM Master
+  config.vm.define "master" do |master|
+    master.vm.box = "ubuntu/focal64"
+    master.vm.hostname = "master"
+    master.vm.network "private_network", ip: "190.168.10.1"
+
+    master.vm.provision "shell", inline: <<-SHELL
+      apt-get update -y
+      apt-get install -y ansible docker.io python3-pip git
+      systemctl enable docker
+      systemctl start docker
+    SHELL
+
+    # Copier le script check_master.sh et l'exécuter
+    master.vm.provision "file", source: "check_master.sh", destination: "/home/vagrant/check_master.sh"
+    master.vm.provision "shell", inline: <<-SHELL
+      chmod +x /home/vagrant/check_master.sh
+      /home/vagrant/check_master.sh
+    SHELL
+  end
+
+  # Configuration de la VM Slave
+  config.vm.define "slave" do |slave|
+    slave.vm.box = "ubuntu/focal64"
+    slave.vm.hostname = "slave"
+    slave.vm.network "private_network", ip: "190.168.10.2"
+
+    slave.vm.provision "shell", inline: <<-SHELL
+      apt-get update -y
+      apt-get install -y python3 python3-pip
+    SHELL
+
+    # Copier le script check_slave.sh et l'exécuter
+    slave.vm.provision "file", source: "check_slave.sh", destination: "/home/vagrant/check_slave.sh"
+    slave.vm.provision "shell", inline: <<-SHELL
+      chmod +x /home/vagrant/check_slave.sh
+      /home/vagrant/check_slave.sh
+    SHELL
+  end
+
+end
